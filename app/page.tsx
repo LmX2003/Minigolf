@@ -73,10 +73,23 @@ export default function Home() {
     const tick = () => {
       const s = state.current, h = holes[s.hole];
       if (s.moving) {
+        const previous = { x: s.ball.x, y: s.ball.y };
         s.ball.x += s.velocity.x; s.ball.y += s.velocity.y; s.velocity.x *= .985; s.velocity.y *= .985;
         if (s.ball.x < 84 || s.ball.x > 816) { s.velocity.x *= -.82; s.ball.x = Math.max(84, Math.min(816, s.ball.x)); }
         if (s.ball.y < 84 || s.ball.y > 476) { s.velocity.y *= -.82; s.ball.y = Math.max(84, Math.min(476, s.ball.y)); }
-        h.blocks.forEach((b) => { if (s.ball.x > b.x - 13 && s.ball.x < b.x + b.w + 13 && s.ball.y > b.y - 13 && s.ball.y < b.y + b.h + 13) { const left = Math.abs(s.ball.x - (b.x - 13)), right = Math.abs(s.ball.x - (b.x + b.w + 13)), top = Math.abs(s.ball.y - (b.y - 13)), bottom = Math.abs(s.ball.y - (b.y + b.h + 13)); if (Math.min(left, right) < Math.min(top, bottom)) s.velocity.x *= -1; else s.velocity.y *= -1; s.ball.x -= s.velocity.x * 1.5; s.ball.y -= s.velocity.y * 1.5; } });
+        h.blocks.forEach((b) => {
+          const left = b.x - 13, right = b.x + b.w + 13, top = b.y - 13, bottom = b.y + b.h + 13;
+          const overlaps = s.ball.x > left && s.ball.x < right && s.ball.y > top && s.ball.y < bottom;
+          if (!overlaps) return;
+          const crossedHorizontal = previous.x <= left || previous.x >= right;
+          if (crossedHorizontal) {
+            s.ball.x = previous.x <= left ? left : right;
+            s.velocity.x *= -0.82;
+          } else {
+            s.ball.y = previous.y <= top ? top : bottom;
+            s.velocity.y *= -0.82;
+          }
+        });
         if (Math.hypot(s.ball.x - h.cup.x, s.ball.y - h.cup.y) < 17 && Math.hypot(s.velocity.x, s.velocity.y) < 5) { s.ball = { ...h.cup }; s.velocity = { x: 0, y: 0 }; s.moving = false; s.finished = true; setScores((prev) => [...prev, s.shots]); setMessage("Loch geschafft — stark gespielt!"); }
         if (Math.hypot(s.velocity.x, s.velocity.y) < .12) { s.velocity = { x: 0, y: 0 }; s.moving = false; setMessage("Bereit für den nächsten Schlag"); }
       }
